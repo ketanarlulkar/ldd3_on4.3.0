@@ -29,19 +29,22 @@ int scull_open(struct inode *inode, struct file *filp)
 	struct scull_dev *dev;
 	dev  = container_of(inode->i_cdev, struct scull_dev, cdev);
 	filp->private_data = dev;
+	pr_info("Device Opened\n");
 	return 0;
 }
 ssize_t scull_read(struct file *filp, char __user *buf, size_t count, loff_t *f_pos)
 {
-	
+	pr_info("Device Read\n");	
 	return 0;
 }
 ssize_t scull_write(struct file *filp, const char __user *buf, size_t count, loff_t *f_pos)
 {
-	return 0;
+	pr_info("Device Written\n");
+	return count;
 }
 int scull_release(struct inode *inode, struct file *filp)
 {
+	pr_info("Device Released\n");
 	return 0;
 }
 
@@ -50,25 +53,25 @@ struct file_operations scull_fops = {
 	.open    = scull_open,
 	.release = scull_release,
 	.read    = scull_read,
-	.write   = scull_write,
+	.write   = scull_write
 };
 
 static void scull_clear(void)
 {
-	pr_alert("Cleaning\n");
+	pr_info("Cleaning\n");
 	if(dev){
-		pr_alert("Removing dev\n");
+		pr_info("Removing dev\n");
 		cdev_del(&dev->cdev);
 	}
-	pr_alert("Destroying device in class");
+	pr_info("Destroying device in class");
 	device_destroy(scull_class,dev_no);
 	if(scull_class){
-		pr_alert("Destroying Class");
+		pr_info("Destroying Class");
 		class_destroy(scull_class);
 	}
-	pr_alert("Deallocating Number\n");
+	pr_info("Deallocating Number\n");
 	unregister_chrdev_region(dev_no, count);
-        pr_alert("Bye\n");
+        pr_info("Bye\n");
 }
 
 static int scull_init(void)
@@ -77,7 +80,7 @@ static int scull_init(void)
 	int firstminor = 0;
 	int scull_major;
 	struct device *scull_device;
-	pr_alert("Request dynamic allocation of major number\n");
+	pr_info("Request dynamic allocation of major number\n");
 	ret = alloc_chrdev_region(&dev_no, firstminor, count, "scull");
 	scull_major = MAJOR(dev_no);
 	if (ret <  0){
@@ -85,14 +88,14 @@ static int scull_init(void)
 		goto fail;
 	}
 	else
-		pr_alert("We get major number %d \n", scull_major);
-	pr_alert("Creating device class for registering in sysfs\n");
+		pr_info("We get major number %d \n", scull_major);
+	pr_info("Creating device class for registering in sysfs\n");
 	scull_class = class_create(THIS_MODULE, "Char_Driver_Scull");
 	if (!scull_class){
 		pr_err("Can not creat class, returns %p\n", scull_class);
 		goto fail;
 	}
-	pr_alert("Creating device in Char_drive_Scull class\n");
+	pr_info("Creating device in Char_drive_Scull class\n");
 	scull_device = device_create(scull_class, NULL, dev_no, NULL, "scull");
 	if(!scull_device){
 		pr_err("Device create failed with %p\n",scull_device);
@@ -107,13 +110,12 @@ static int scull_init(void)
 	}
 	cdev_init(&dev->cdev, &scull_fops);
 	dev->cdev.owner = THIS_MODULE;
-	dev->cdev.ops   = &scull_fops;
 	ret = cdev_add(&dev->cdev, dev_no, count);
 	if (ret){
 		pr_err("Error %d adding cdev\n",ret);
 		goto fail;
 	}
-	pr_alert("Done it\n");
+	pr_info("Done it\n");
 	return 0;
 fail:	scull_clear();
 	return ret;
